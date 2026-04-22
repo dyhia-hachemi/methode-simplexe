@@ -329,3 +329,80 @@ def afficher_graphe_2d(A, b, types, x1_val, x2_val):
     
     print("Le graphique a été généré ! \nFermez la fenêtre du graphique pour terminer le programme.")
     plt.show()
+
+# Programme principal
+def main():
+    """Point d'entrée du programme : orchestre la saisie, la Phase 1 et la Phase 2."""
+    sens, n, c, m, A, b, types, noms_x = saisir_probleme()
+    tableau, variables_en_base, nb_artificielle = preparer_tableau(sens, n, c, m, A, b, types)
+
+    print("\nÉTAT INITIAL DU TABLEAU :")
+    afficher_tableau(tableau)
+
+    continuer_resolution = True # Un drapeau pour savoir si on doit lancer la phase finale
+
+    if nb_artificielle > 0:
+        print("\n" + "!" * 60)
+        print(f"  ATTENTION : Le problème contient {nb_artificielle} variable(s) artificielle(s).")
+        print("  Le Simplexe standard ne peut pas démarrer directement.")
+        print("!" * 60)
+        
+        choix = input("\nVoulez-vous utiliser la méthode des Deux Phases ? (o/n) : ").strip().lower()
+        if choix in ('o', 'oui'):
+            faisable, vraie_ligne_z = executer_phase_1(tableau, variables_en_base, types)
+            
+            if faisable:
+                print("\nTRANSITION VERS LA PHASE 2")
+                # Restauration de la ligne Z
+                tableau[0] = vraie_ligne_z
+                
+                # Nettoyage de la ligne Z (forcer les coefs des variables en base à 0)
+                for i in range(1, len(tableau)):
+                    colonne_base = variables_en_base[i]
+                    if colonne_base != -1:
+                        coef_dans_z = tableau[0][colonne_base]
+                        if coef_dans_z != 0:
+                            # On soustrait (coef * ligne_entière) à la ligne Z
+                            for j in range(len(tableau[0])):
+                                tableau[0][j] -= coef_dans_z * tableau[i][j]
+                                
+                print("\nTableau restauré pour la Phase 2 :")
+                afficher_tableau(tableau)
+                print("\nLANCEMENT DE LA PHASE 2...")
+            else:
+                continuer_resolution = False # Le problème est infaisable, on s'arrête
+        else:
+            print("\nRésolution annulée.")
+            continuer_resolution = False
+    else:
+        print("\nLANCEMENT DE SIMPLEXE...")
+
+    # Lancement final si tout s'est bien passé (Phase 2 directe ou après Phase 1)
+    if continuer_resolution:
+        executer_phase_2(tableau, variables_en_base)
+        print("\nRÉSOLUTION FINALE TERMINÉE !")
+        valeur_z = tableau[0][-1]
+        if sens == "min":
+             valeur_z = -valeur_z
+        print(f"La valeur optimale de Z est : {valeur_z:6.2F}")
+        
+        if n == 2:
+            # Extraction des valeurs finales de x1 et x2
+            x1_val = 0.0
+            x2_val = 0.0
+            for i in range(1, len(tableau)):
+                if variables_en_base[i] == 0:  # Colonne 0 = x1
+                    x1_val = tableau[i][-1]
+                elif variables_en_base[i] == 1: # Colonne 1 = x2
+                    x2_val = tableau[i][-1]
+                    
+            print(f"\nValeurs optimales : x1 = {x1_val:.2f}, x2 = {x2_val:.2f}")
+            
+            # Proposition d'affichage
+            choix_graphe = input("\nVoulez-vous afficher le graphe des solutions ? (o/n) : ").strip().lower()
+            if choix_graphe in ('o', 'oui'):
+                afficher_graphe_2d(A, b, types, x1_val, x2_val)
+
+if __name__ == "__main__":
+    print(" *************** Solveur Simplexe & Méthode des Deux Phases *************** ")
+    main()
