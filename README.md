@@ -29,7 +29,13 @@ pip install numpy matplotlib
 
 Lancez simplement le script Python depuis votre terminal : python simplexe.py
 
-Laissez-vous guider par l'interface interactive. Voici comment se déroule une saisie typique : - Choisissez le type d'optimisation (max ou min). - Entrez le nombre de variables de décision. - Saisissez les coefficients de la fonction objectif (espacés par un espace). - Entrez le nombre de contraintes. - Pour chaque contrainte, entrez les coefficients, le signe (<=, >=, =), puis le membre de droite.
+Laissez-vous guider par l'interface interactive. Voici comment se déroule une saisie typique :
+
+- Choisissez le type d'optimisation (max ou min).
+- Entrez le nombre de variables de décision.
+- Saisissez les coefficients de la fonction objectif (espacés par un espace).
+- Entrez le nombre de contraintes.
+- Pour chaque contrainte, entrez les coefficients, le signe (<=, >=, =), puis le membre de droite.
 
 ## Auteur
 
