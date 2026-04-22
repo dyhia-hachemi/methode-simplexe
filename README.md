@@ -23,6 +23,7 @@ Pour faire fonctionner ce programme, vous devez avoir **Python 3.x** installé s
 
 ```bash
 pip install numpy matplotlib
+```
 
 ## 🚀 Utilisation
 
@@ -35,4 +36,3 @@ Laissez-vous guider par l'interface interactive. Voici comment se déroule une s
 Hachemi Dyhia
 
 Projet réalisé dans le cadre de l'étude de l'optimisation linéaire et de la recherche opérationnelle.
-```
