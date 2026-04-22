@@ -229,3 +229,46 @@ def preparer_tableau(sens, n, c, m, A, b, types):
     # On renvoie aussi le nombre de variables artificielles créées.
     # Si c'est > 0, le programme saura qu'il doit faire la Phase 1 (Deux Phases) !
     return tableau, variables_en_base, nb_artificielle
+
+def executer_phase_1(tableau, variables_en_base, types):
+    """
+    Gère la Phase 1 du Simplexe pour chasser les variables artificielles.
+    Crée une fonction objectif temporaire, lance le pivotage, et vérifie la faisabilité.
+    """
+    print("\nDÉMARRAGE DE LA PHASE 1")
+
+    # Sauvegarde de la vraie ligne Z (avec la méthode .copy() pour ne pas la perdre)
+    vraie_ligne_z = tableau[0].copy()
+
+    # On remplace la ligne Z actuelle par des zéros
+    colonnes = len(tableau[0])
+    tableau[0] = [0.0 for _ in range(colonnes)]
+
+    # La ruse mathématique : on construit le "Faux objectif"
+    # Pour chaque contrainte qui avait un >= ou un =, il y a une variable artificielle.
+    # On doit soustraire cette ligne à notre nouvelle ligne Z.
+    for i in range(len(types)):
+        signe = types[i]
+        ligne_actuelle = i + 1 # +1 car la ligne 0 c'est Z
+        
+        if signe == ">=" or signe == "=":
+            # On soustrait chaque élément de la ligne à la ligne Z
+            for j in range(colonnes):
+                tableau[0][j] = tableau[0][j] - tableau[ligne_actuelle][j]
+
+    print("\nTableau préparé pour la Phase 1 (Fausse ligne Z) :")
+    afficher_tableau(tableau)
+    
+    # On lance le moteur sur ce faux problème !
+    print("\nRésolution de la Phase 1 ---")
+    executer_phase_2(tableau, variables_en_base)
+
+    valeur_phase_1 = tableau[0][-1]
+    # Si la valeur est négative (en dessous de -0.00001 pour ignorer les micro-erreurs d'arrondi)
+    if valeur_phase_1 < -1e-5: 
+        print("\nERREUR : Problème INFAISABLE.")
+        print("Il est impossible de respecter toutes ces contraintes en même temps.")
+        return False, vraie_ligne_z
+        
+    print("\nPhase 1 réussie ! Les variables artificielles ont été éliminées.")
+    return True, vraie_ligne_z
