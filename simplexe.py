@@ -272,3 +272,60 @@ def executer_phase_1(tableau, variables_en_base, types):
         
     print("\nPhase 1 réussie ! Les variables artificielles ont été éliminées.")
     return True, vraie_ligne_z
+
+def afficher_graphe_2d(A, b, types, x1_val, x2_val):
+    """Génère un graphique 2D montrant les contraintes, la zone admissible et l'optimum."""
+    print("\nGénération du graphique en cours...")
+    
+    # Déterminer la taille de la fenêtre (un peu plus grande que les points clés)
+    max_val = max(10, x1_val * 1.5, x2_val * 1.5)
+    for i in range(len(b)):
+        if A[i][0] > 0: max_val = max(max_val, (b[i] / A[i][0]) * 1.2)
+        if A[i][1] > 0: max_val = max(max_val, (b[i] / A[i][1]) * 1.2)
+        
+    # Créer une grille de points pour colorier la zone admissible
+    x = np.linspace(0, max_val, 400)
+    y = np.linspace(0, max_val, 400)
+    X, Y = np.meshgrid(x, y)
+    
+    zone_admissible = np.ones_like(X, dtype=bool)
+    
+    # Appliquer chaque contrainte sur la grille
+    for i in range(len(b)):
+        a1, a2 = A[i]
+        if types[i] == "<=":
+            zone_admissible = zone_admissible & (a1 * X + a2 * Y <= b[i])
+        elif types[i] == ">=":
+            zone_admissible = zone_admissible & (a1 * X + a2 * Y >= b[i])
+        elif types[i] == "=":
+            # Pour l'égalité, on trace une "bande" très fine sur la grille
+            zone_admissible = zone_admissible & (abs(a1 * X + a2 * Y - b[i]) < max_val * 0.01)
+
+    plt.figure(figsize=(8, 6))
+    
+    # Colorier la zone admissible en vert transparent
+    plt.imshow(zone_admissible.astype(int), extent=(0, max_val, 0, max_val), origin="lower", cmap="Greens", alpha=0.3)
+    
+    # Tracer les droites des contraintes
+    x_ligne = np.linspace(0, max_val, 400)
+    for i in range(len(b)):
+        a1, a2 = A[i]
+        if a2 != 0:
+            y_ligne = (b[i] - a1 * x_ligne) / a2
+            plt.plot(x_ligne, y_ligne, label=f'Contrainte {i+1} ({types[i]} {b[i]})')
+        else:
+            plt.axvline(x=b[i]/a1, label=f'Contrainte {i+1} ({types[i]} {b[i]})')
+            
+    # Placer un gros point rouge sur la solution optimale
+    plt.plot(x1_val, x2_val, 'ro', markersize=8, label=f'Optimum ($x_1$={x1_val:.2f}, $x_2$={x2_val:.2f})')
+    
+    plt.xlim(0, max_val)
+    plt.ylim(0, max_val)
+    plt.xlabel("$x_1$")
+    plt.ylabel("$x_2$")
+    plt.title("Polygone des solutions admissibles")
+    plt.legend()
+    plt.grid(True, linestyle='--', alpha=0.6)
+    
+    print("Le graphique a été généré ! \nFermez la fenêtre du graphique pour terminer le programme.")
+    plt.show()
