@@ -98,3 +98,134 @@ def executer_phase_2(tableau, variable_en_base):
                 valeur_z = tableau[0][-1]
                 print(f"-Valeur de Z courante = {valeur_z:.2F}")
                 iteration += 1
+
+def saisir_vecteur(message, n):
+    """Demande à l'utilisateur de saisir exactement 'n' valeurs numériques."""
+    while True:
+        try:
+            vals = list(map(float, input(message).split()))
+            if len(vals) == n:
+                return vals
+            print("Entrez exactement " + str(n) + " valeurs.")
+        except ValueError:
+            print("Valeurs invalides.")
+
+def saisir_probleme():
+    """Gère l'interaction avec l'utilisateur pour définir le problème linéaire."""
+    while True:
+        sens = input("\nType d'optimisation (max / min) : ").strip().lower()
+        if sens in ("max", "min"):
+            break
+        print("  Entrez 'max' ou 'min'.")
+
+    while True:
+        try:
+            n = int(input("\nNombre de variables de decision : "))
+            if n >= 1:
+                break
+        except ValueError:
+            pass
+        print("  Entrez un entier >= 1.")
+
+    noms_x = ["x" + str(j+1) for j in range(n)]
+    print("Variables : " + ", ".join(noms_x))
+
+    print("\nFonction objectif : " + sens.upper() + " Z")
+    c = saisir_vecteur("Coefficients Z [" + ", ".join(noms_x) + "] : ", n)
+
+    while True:
+        try:
+            m = int(input("\nNombre de contraintes : "))
+            if m >= 1:
+                break
+        except ValueError:
+            pass
+        print("Entrez un entier >= 1.")
+
+    A, b, types = [], [], []
+    print("Saisie des contraintes :")
+
+    for i in range(m):
+        print("Contrainte " + str(i+1) + " :")
+        ai = saisir_vecteur("  Coefficients [" + ", ".join(noms_x) + "] : ", n)
+        while True:
+            t = input("  Signe (<= / >= / =) : ").strip()
+            if t in ("<=", ">=", "="):
+                break
+            print("Entrez <=, >= ou =.")
+        
+        while True:
+            try:
+                bi = float(input("  Membre droit b" + str(i+1) + " : "))
+                break
+            except ValueError:
+                print("Entrez un nombre reel.")
+        A.append(ai)
+        b.append(bi)
+        types.append(t)
+
+    return sens, n, c, m, A, b, types, noms_x
+
+def preparer_tableau(sens, n, c, m, A, b, types):
+    """
+    Traduit les données de l'utilisateur en un tableau matriciel compatible
+    avec notre algorithme (Ligne Z à l'indice 0).
+    Gère la création des variables d'écart, d'excédent et artificielles.
+    """
+
+    # Compter les variables nécessaires
+    nb_ecart = types.count("<=")
+    nb_excedent = types.count(">=")
+    nb_artificielle = types.count(">=") + types.count("=")
+    
+    total_colonnes = n + nb_ecart + nb_excedent + nb_artificielle + 1 # +1 pour le RHS
+    
+    # Création de la coquille vide et de la base
+    tableau = [[0.0 for _ in range(total_colonnes)] for _ in range(m + 1)]
+    variables_en_base = [-1] * (m + 1) # -1 pour la ligne Z qui n'a pas de variable en base
+    
+    # Remplissage de la ligne Z (Indice 0)
+    # Pour un problème MAX, on met les coefficients en négatif dans le tableau.
+    # Pour un problème MIN, c'est l'inverse.
+    for j in range(n):
+        if sens == "max":
+            tableau[0][j] = -c[j]
+        else:
+            tableau[0][j] = c[j] 
+            
+    # Remplissage des contraintes
+    curseur_colonne = n # On commence à ajouter les variables après les x
+    
+    for i in range(m):
+        ligne_actuelle = i + 1 # Car la ligne 0 est pour Z
+        
+        # Copier les coefficients des variables de décision (x)
+        for j in range(n):
+            tableau[ligne_actuelle][j] = A[i][j]
+            
+        # Copier le second membre (RHS) à la toute fin
+        tableau[ligne_actuelle][-1] = b[i]
+        
+        # Ajouter les variables selon le signe
+        signe = types[i]
+        
+        if signe == "<=":
+            tableau[ligne_actuelle][curseur_colonne] = 1.0 # Variable d'écart
+            variables_en_base[ligne_actuelle] = curseur_colonne
+            curseur_colonne += 1
+            
+        elif signe == ">=":
+            tableau[ligne_actuelle][curseur_colonne] = -1.0 # Variable d'excédent
+            curseur_colonne += 1
+            tableau[ligne_actuelle][curseur_colonne] = 1.0 # Variable artificielle
+            variables_en_base[ligne_actuelle] = curseur_colonne
+            curseur_colonne += 1
+            
+        elif signe == "=":
+            tableau[ligne_actuelle][curseur_colonne] = 1.0 # Variable artificielle
+            variables_en_base[ligne_actuelle] = curseur_colonne
+            curseur_colonne += 1
+
+    # On renvoie aussi le nombre de variables artificielles créées.
+    # Si c'est > 0, le programme saura qu'il doit faire la Phase 1 (Deux Phases) !
+    return tableau, variables_en_base, nb_artificielle
